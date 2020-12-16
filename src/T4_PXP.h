@@ -46,7 +46,7 @@ void PXP_rotate(uint8_t r);
 void PXP_rotate_position(bool pos);
 
 //Output buffer format
-void PXP_output_format(uint8_t format = PXP_RGB565, uint8_t interlaced = 0, bool alpha_override = false, uint8_t alpha = 0xFF);
+void PXP_output_format(uint8_t format = PXP_RGB565, uint8_t interlaced = 0, bool alpha_override = false, uint8_t alpha = 0);
 //Output buffer
 void PXP_output_buffer(void* buf, uint16_t pixelSizeInBytes, uint16_t width, uint16_t height);
 //Output buffer for interlaced or YUV formats only

@@ -57,7 +57,7 @@ typedef struct
     volatile uint32_t PORTER_DUFF_CTRL;
 } IMXRT_NEXT_PXP_t;
 
-volatile IMXRT_NEXT_PXP_t next_pxp __attribute__ ((aligned(32)));
+volatile IMXRT_NEXT_PXP_t next_pxp __attribute__ ((aligned(32))) = {0};
 volatile bool PXP_done = true;
 //These are only used to flush cached buffers
 uint16_t PS_BUF_width, PS_BUF_height, PS_BUF_bytesPerPixel,
@@ -107,15 +107,16 @@ void PXP_init(){
 
 //  memcpy(&next_pxp, (const void*)&PXP_CTRL, sizeof(IMXRT_PXP_t)/4);
 
-  next_pxp.CTRL = PXP_CTRL;
+  next_pxp.CTRL = PXP_CTRL_IRQ_ENABLE | PXP_CTRL_NEXT_IRQ_ENABLE | PXP_CTRL_ENABLE;
   next_pxp.OUT_CTRL = PXP_OUT_CTRL;
   next_pxp.PS_SCALE = PXP_PS_SCALE;
   next_pxp.PS_CLRKEYLOW = PXP_PS_CLRKEYLOW_0;
   next_pxp.AS_CLRKEYLOW = PXP_AS_CLRKEYLOW_0;
+  next_pxp.CSC1_COEF0 = PXP_COEF0_BYPASS;
     
   PXP_block_size(true);
 
-  PXP_process();
+//  PXP_process();
   
   NVIC_ENABLE_IRQ(IRQ_PXP);
 }
@@ -292,12 +293,12 @@ void PXP_process(){
   while ((PXP_NEXT & PXP_NEXT_ENABLED) != 0){}
   PXP_done = false;
   
-  if ((uint32_t)next_pxp.OUT_BUF >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.OUT_BUF, OUT_BUF_width * OUT_BUF_height * OUT_BUF_bytesPerPixel);
-  if ((uint32_t)next_pxp.OUT_BUF2 >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.OUT_BUF2, OUT_BUF2_width * OUT_BUF2_height * OUT_BUF2_bytesPerPixel);
-  if ((uint32_t)next_pxp.PS_BUF >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.PS_BUF, PS_BUF_width * PS_BUF_height * PS_BUF_bytesPerPixel);
-  if ((uint32_t)next_pxp.PS_UBUF >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.PS_UBUF, PS_UBUF_width * PS_UBUF_height * PS_UBUF_bytesPerPixel);
-  if ((uint32_t)next_pxp.PS_VBUF >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.PS_VBUF, PS_VBUF_width * PS_VBUF_height * PS_VBUF_bytesPerPixel);
-  if ((uint32_t)next_pxp.AS_BUF >= 0x20200000u)  arm_dcache_flush((void*)next_pxp.AS_BUF, AS_BUF_width * AS_BUF_height * AS_BUF_bytesPerPixel);
+  if ((uint32_t)next_pxp.OUT_BUF >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.OUT_BUF, OUT_BUF_width * OUT_BUF_height * OUT_BUF_bytesPerPixel);
+  if ((uint32_t)next_pxp.OUT_BUF2 >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.OUT_BUF2, OUT_BUF2_width * OUT_BUF2_height * OUT_BUF2_bytesPerPixel);
+  if ((uint32_t)next_pxp.PS_BUF >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.PS_BUF, PS_BUF_width * PS_BUF_height * PS_BUF_bytesPerPixel);
+  if ((uint32_t)next_pxp.PS_UBUF >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.PS_UBUF, PS_UBUF_width * PS_UBUF_height * PS_UBUF_bytesPerPixel);
+  if ((uint32_t)next_pxp.PS_VBUF >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.PS_VBUF, PS_VBUF_width * PS_VBUF_height * PS_VBUF_bytesPerPixel);
+  if ((uint32_t)next_pxp.AS_BUF >= 0x20200000u)  arm_dcache_flush_delete((void*)next_pxp.AS_BUF, AS_BUF_width * AS_BUF_height * AS_BUF_bytesPerPixel);
   
   
   PXP_NEXT = (uint32_t)&next_pxp;
@@ -309,4 +310,6 @@ void PXP_finish(){
 //    PXP_STAT_CLR = PXP_STAT_IRQ;
 //  }
   while(!PXP_done){};
+  PXP_CTRL_CLR =  PXP_CTRL_ENABLE;
+  if ((uint32_t)next_pxp.OUT_BUF > 0x2020000) arm_dcache_flush_delete((void *)next_pxp.OUT_BUF, OUT_BUF_width * OUT_BUF_height * OUT_BUF_bytesPerPixel);
 }
