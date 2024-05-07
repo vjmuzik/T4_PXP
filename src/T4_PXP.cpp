@@ -313,3 +313,64 @@ void PXP_finish(){
   PXP_CTRL_CLR =  PXP_CTRL_ENABLE;
   if ((uint32_t)next_pxp.OUT_BUF > 0x2020000) arm_dcache_flush_delete((void *)next_pxp.OUT_BUF, OUT_BUF_width * OUT_BUF_height * OUT_BUF_bytesPerPixel);
 }
+
+
+void PXP_GetScaleFactor(uint16_t inputDimension, uint16_t outputDimension, uint8_t *dec, uint32_t *scale)
+{
+    uint32_t scaleFact = ((uint32_t)inputDimension << 12U) / outputDimension;
+
+    if (scaleFact >= (16U << 12U))
+    {
+        /* Desired fact is two large, use the largest support value. */
+        *dec = 3U;
+        *scale = 0x2000U;
+    }
+    else
+    {
+        if (scaleFact > (8U << 12U))
+        {
+            *dec = 3U;
+        }
+        else if (scaleFact > (4U << 12U))
+        {
+            *dec = 2U;
+        }
+        else if (scaleFact > (2U << 12U))
+        {
+            *dec = 1U;
+        }
+        else
+        {
+            *dec = 0U;
+        }
+
+        *scale = scaleFact >> (*dec);
+
+        if (0U == *scale)
+        {
+            *scale = 1U;
+        }
+    }
+}
+
+void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWidth, uint16_t outputHeight)
+{
+    uint8_t decX, decY;
+    uint32_t scaleX, scaleY;
+
+    PXP_GetScaleFactor(inputWidth, outputWidth, &decX, &scaleX);
+    PXP_GetScaleFactor(inputHeight, outputHeight, &decY, &scaleY);
+
+    //next_pxp.PS_CTRL = (next_pxp.CTRL & ~(0xC00U | 0x300U)) | PXP_PS_CTRL_DECX(decX) | PXP_PS_CTRL_DECY(decY);
+
+    next_pxp.PS_SCALE = PXP_XSCALE(scaleX) | PXP_YSCALE(scaleY);
+}
+
+#define PXP_OUT_PS_X(x)  (((uint32_t)(((uint32_t)(x)) << 16)) & (0x3FFF0000U))
+#define PXP_OUT_PS_Y(x)  ((uint32_t)((uint32_t)(x)) & (0x3FFFU))
+
+void PXP_SetOutputCorners(uint16_t ulc_x, uint16_t ulc_y, uint16_t lrc_x, uint16_t lrc_y)
+{
+   next_pxp.OUT_PS_ULC = PXP_OUT_PS_Y(ulc_y) | PXP_OUT_PS_X(ulc_x);
+   next_pxp.OUT_PS_LRC= PXP_OUT_PS_Y(lrc_y) | PXP_OUT_PS_X(lrc_x);
+}
