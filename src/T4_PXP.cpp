@@ -218,6 +218,11 @@ void PXP_input_v_buffer(void* buf, uint16_t bytesPerPixel, uint16_t width, uint1
 }
 
 void PXP_input_position(uint16_t x, uint16_t y, uint16_t x1, uint16_t y1){
+  /*
+    * Set the process surface position in output buffer
+    * x, y: Upper left corner
+    * x1, y1: Lower right corners
+    */
   next_pxp.OUT_PS_ULC = PXP_XCOORD(x) | PXP_YCOORD(y);
   next_pxp.OUT_PS_LRC = PXP_XCOORD(x1) | PXP_YCOORD(y1);
 }
@@ -366,11 +371,4 @@ void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWi
     next_pxp.PS_SCALE = PXP_XSCALE(scaleX) | PXP_YSCALE(scaleY);
 }
 
-#define PXP_OUT_PS_X(x)  (((uint32_t)(((uint32_t)(x)) << 16)) & (0x3FFF0000U))
-#define PXP_OUT_PS_Y(x)  ((uint32_t)((uint32_t)(x)) & (0x3FFFU))
-
-void PXP_SetOutputCorners(uint16_t ulc_x, uint16_t ulc_y, uint16_t lrc_x, uint16_t lrc_y)
-{
-   next_pxp.OUT_PS_ULC = PXP_OUT_PS_Y(ulc_y) | PXP_OUT_PS_X(ulc_x);
-   next_pxp.OUT_PS_LRC= PXP_OUT_PS_Y(lrc_y) | PXP_OUT_PS_X(lrc_x);
-}
+  

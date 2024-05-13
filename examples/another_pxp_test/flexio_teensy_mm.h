@@ -5,6 +5,9 @@
 // Memory usage   : 307200 bytes
 
 #include "Arduino.h"
+  uint16_t  image_width = 480;
+  uint16_t  image_height = 320;
+  #define has_teensymm
 
 const unsigned short flexio_teensy_mm[153600] FLASHMEM={
 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0010 (16) pixels

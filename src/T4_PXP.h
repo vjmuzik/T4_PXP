@@ -89,7 +89,6 @@ void PXP_overlay_color_key_low(uint32_t rgb888);
 void PXP_overlay_color_key_high(uint8_t r8, uint8_t g8, uint8_t b8);
 void PXP_overlay_color_key_high(uint32_t rgb888);
 
-void PXP_SetOutputCorners(uint16_t ulc_x, uint16_t ulc_y, uint16_t lrc_x, uint16_t lrc_y);
 void PXP_GetScalerParam(uint16_t inputDimension, uint16_t outputDimension, uint8_t *dec, uint32_t *scale);
 void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWidth, uint16_t outputHeight);
 
