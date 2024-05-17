@@ -371,4 +371,51 @@ void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWi
     next_pxp.PS_SCALE = PXP_XSCALE(scaleX) | PXP_YSCALE(scaleY);
 }
 
+void PXP_SetCsc1Mode(uint8_t mode)
+{
+    //kPXP_Csc1YUV2RGB = 0U, /*!< YUV to RGB. */
+    //kPXP_Csc1YCbCr2RGB,    /*!< YCbCr to RGB. */
   
+    /*
+     * The equations used for Colorspace conversion are:
+     *
+     * R = C0*(Y+Y_OFFSET)                   + C1(V+UV_OFFSET)
+     * G = C0*(Y+Y_OFFSET) + C3(U+UV_OFFSET) + C2(V+UV_OFFSET)
+     * B = C0*(Y+Y_OFFSET) + C4(U+UV_OFFSET)
+     */
+
+    if (mode == 0)
+    {
+        //next_pxp.CSC1_COEF0 = (next_pxp.CSC1_COEF0 &
+        //                    ~(0x1FFC0000U | 0x1FFU | 0x3FE00U | 0x80000000U)) |
+        //                   PXP_COEF0_C0(0x100U)         /* 1.00. */
+        //                   | PXP_COEF0_Y_OFFSET(0x0U)   /* 0. */
+        //                   | PXP_COEF0_UV_OFFSET(0x0U); /* 0. */
+        //next_pxp.CSC1_COEF1 = PXP_COEF1_C1(0x0123U)        /* 1.140. */
+        //                   | PXP_COEF1_C4(0x0208U);     /* 2.032. */
+        //next_pxp.CSC1_COEF2 = PXP_COEF2_C2(0x076BU)        /* -0.851. */
+        //                   | PXP_COEF2_C3(0x079BU);     /* -0.394. */
+        next_pxp.CSC1_COEF0 = 0x84ab01f0;
+        next_pxp.CSC1_COEF1 =  0;
+        next_pxp.CSC1_COEF2 = 0;                   
+                           
+    }
+    else
+    {
+        next_pxp.CSC1_COEF0 = (next_pxp.CSC1_COEF0 &
+                            ~(0x1FFC0000U | 0x1FFU | 0x3FE00U)) |
+                           0x80000000U | PXP_COEF0_C0(0x12AU) /* 1.164. */
+                           | PXP_COEF0_Y_OFFSET(0x1F0U)                          /* -16. */
+                           | PXP_COEF0_UV_OFFSET(0x180U);                        /* -128. */
+        next_pxp.CSC1_COEF1 = PXP_COEF1_C1(0x0198U)                                 /* 1.596. */
+                           | PXP_COEF1_C4(0x0204U);                              /* 2.017. */
+        next_pxp.CSC1_COEF2 = PXP_COEF2_C2(0x0730U)                                 /* -0.813. */
+                           | PXP_COEF2_C3(0x079CU);                              /* -0.392. */
+    }
+}
+
+void set_csc_y8_to_rgb() {
+  next_pxp.CSC1_COEF0 = 0x84ab01f0;
+  next_pxp.CSC1_COEF1 =  0;
+  next_pxp.CSC1_COEF2 = 0; 
+}
