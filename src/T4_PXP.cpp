@@ -414,7 +414,7 @@ void PXP_SetCsc1Mode(uint8_t mode)
     }
 }
 
-void set_csc_y8_to_rgb() {
+void PXP_set_csc_y8_to_rgb() {
   next_pxp.CSC1_COEF0 = 0x84ab01f0;
   next_pxp.CSC1_COEF1 =  0;
   next_pxp.CSC1_COEF2 = 0; 

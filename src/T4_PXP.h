@@ -92,7 +92,7 @@ void PXP_overlay_color_key_high(uint32_t rgb888);
 void PXP_GetScalerParam(uint16_t inputDimension, uint16_t outputDimension, uint8_t *dec, uint32_t *scale);
 void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWidth, uint16_t outputHeight);
 void PXP_SetCsc1Mode(uint8_t mode);
-void set_csc_y8_to_rgb();
+void PXP_set_csc_y8_to_rgb();
 
 //Call process to run the PXP with the current settings
 void PXP_process();
