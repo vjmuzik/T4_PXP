@@ -4,8 +4,8 @@
 //Select One
 //#include "little_joe.h"
 //#include "ida.h"
-//#include "flexio_teensy_mm.h"
-#include "testPattern.h"
+#include "flexio_teensy_mm.h"
+//#include "testPattern.h"
 
 /************************************************/
 //Specify the pins used for Non-SPI functions of display
@@ -23,8 +23,12 @@
 
 
 uint8_t bytesperpixel = 2;
-float ScaleFact = 0.9f;
+float ScaleFact = 1.5f; //0.9 for littlejoe and ida
 
+/* timing */
+uint32_t capture_time = 0;
+uint32_t pxp_time = 0;
+uint32_t display_time = 0;
 /************************************************/
 
 #if defined(use9488)
@@ -95,33 +99,39 @@ void loop() {
     uint8_t command = Serial.read();
     switch (command) {
       case '0':
-        PXP_ps_output(0, false, 0.0f);
+        Serial.println("Rotation 0:");
+        run_pxp(0, false, 0.0f);
         break;
       case '1':
-        PXP_ps_output(1, 0, 0.0f);
+        Serial.println("Rotation 1:");
+        run_pxp(1, false, 0.0f);
         break;
       case '2':
-        PXP_ps_output(2, 0, 0.0f);
+        Serial.println("Rotation 2:");
+        run_pxp(2, false, 0.0f);
         break;
       case '3':
-        PXP_ps_output(3, 0, 0.0f);
+        Serial.println("Rotation 3:");
+        run_pxp(3, false, 0.0f);
         break;
       case '4':
-        PXP_ps_output(0, 1, 0.0f);
+        Serial.println("Rotation 0 w/flip:");
+        run_pxp(0, true, 0.0f);
         break;
       case '5':
-        PXP_ps_output(2, 0, ScaleFact);
+        Serial.println("Rotation 2 w/scaling:");
+        run_pxp(2, false, ScaleFact);
         start_pxp();
         break;
       case '6':
-        PXP_ps_output(3, 0, ScaleFact);
+        Serial.println("Rotation 3 w/Scaling:");
+        run_pxp(3, false, ScaleFact);
         start_pxp();
         break;
       case 'f':
         tft.setRotation(0);
         capture_frame(false);
         draw_frame(image_width, image_height, s_fb);
-        //tft.writeRect(CENTER, CENTER, image_width, image_height, (uint16_t *)s_fb);
         tft.setRotation(0);
         break;
       case 's':
@@ -145,168 +155,25 @@ void loop() {
   }
 }
 
-/**************************************************************
- * Function that configures PXP for rotation, flip and scaling
- * and outputs to display.
- * rotation: 0 - 0 degrees, 1 - 90 degrees, 
- *           2 - 180 degrees, 3 - 270 degrees
- * flip: false - no flip, true - flip.
- *       control in filp function PXP_flip, currently configured
- *       for horizontal flip.
- * scaling: scaling factor:
- *          To scale up by a factor of 4, the value of 1/4
- *          Follows inverse of factor input so for a scale
- *          factor of 1.5 actual scaling is about 67%
- ***************************************************************/
-void PXP_ps_output(uint8_t rotation, bool flip, float scaling) {
-  
-  
-  uint32_t psUlcX = 0;
-  uint32_t psUlcY = 0;
-  uint32_t psLrcX, psLrcY;
-  if(image_width > image_height) {
-    psLrcY = psUlcX + tft.width() - 1U;
-    psLrcX = psUlcY + tft.height() - 1U;
-  } else {
-    psLrcX = psUlcX + tft.width() - 1U;
-    psLrcY = psUlcY + tft.height() - 1U;
-  }
-  uint32_t out_width, out_height;
-
-  //memset((uint8_t *)d_fb, 0, sizeof_d_fb);
-  tft.fillScreen(TFT_BLACK);
-  PXP_input_background_color(0, 0, 153);
-
-  /*************************************************************
-   * Configures the input buffer to image width and height.
-   * 
-   **************************************************************/
-  PXP_input_buffer(s_fb /* s_fb */, bytesperpixel, image_width, image_height);
-  
-  /**************************************************************
-   * sets the output format to RGB565
-   * 
-   ****************************************************************/
-  PXP_input_format(PXP_RGB565);
-  
-  /* sets image corners                                       *
-   * ULC: contains the upper left coordinate of the Processed Surface in the output
-   * frame buffer (in pixels). Values that are within the PXP_OUT_LRC X,Y extents are
-   * valid. The lowest valid value for these fields is 0,0. If the value of the
-   * PXP_OUT_PS_ULC is greater than the PXP_OUT_LRC, then no PS pixels will be
-   * fetched from memory, but only PXP_PS_BACKGROUND pixels will be processed by
-   * the PS engine. Pixel locations that are greater than or equal to the PS upper left
-   * coordinates, less than or equal to the PS lower right coordinates, and within the
-   * PXP_OUT_LRC extents will use the PS to render pixels into the output buffer.
-   *
-   * LRC:  contains the size, or lower right coordinate, of the output buffer NOT
-   * rotated. It is implied that the upper left coordinate of the output surface is always [0,0].
-   * When rotating the framebuffer, the PXP will automatically swap the X/Y, or WIDTH/HEIGHT
-   * to accomodate the rotated size.
-   *
-   * currently configured to match TFT width and height for rotation 0! Note the -1 used with
-   * psUlcX and psUlcY - this is per the manual.
-   */
-  PXP_input_position(psUlcX, psUlcY, psLrcX, psLrcY);  // need this to override the setup in pxp_input_buffer
-
-  // Generic function to capture an image and put it in the source buffer
+void run_pxp(uint8_t rotation, bool flip, float scaling){
+  capture_time = millis();
   capture_frame(false);
+  Serial.printf("Capture time (millis): %d, ", millis()-capture_time);
 
-  /*************************************************************
-   * Configures the output buffer to image width and height.
-   * width and height will be swapped depending on rotation.
-   **************************************************************/
-  if (rotation == 1 || rotation == 3) {
-    out_width = image_height;
-    out_height = image_width;
-  } else {
-    out_width = image_width;
-    out_height = image_height;
-  }
-  PXP_output_buffer(d_fb, bytesperpixel, out_width, out_height);
-  
-  /**************************************************************
-   * sets the output format to RGB565
-   * 
-   ****************************************************************/
-  PXP_output_format(PXP_RGB565);
+  pxp_time = micros();
+  PXP_ps_output(tft.width(), tft.height(),      /* Display width and height */
+                image_width, image_height,      /* Image width and height */
+                s_fb, PXP_RGB565, 2, 0,         /* Input buffer configuration */
+                d_fb, PXP_RGB565, 2, 0,         /* Output buffer configuration */ 
+                rotation, flip, scaling,        /* Rotation, flip, scaling */
+                &outputWidth, &outputHeight);   /* Frame Out size for drawing */
+  Serial.printf("PXP time(micros) : %d, ", micros()-pxp_time);
 
-  // PXP_output_clip sets OUT_LRC register
-  /* according to the RM:                                           *
-   * The PXP generates an output image in the resolution programmed *
-   * by the OUT_LRCregister.                                        *
-   * If an image is 480x320, then the for a rotation of 0 you it has*
-   * to be reversed to 320x480 since you drawing on a screen that is*
-   * 320x480 for the ILI8488.
-   *  has to be configured after the output buffer since library
-   *  configures it based on the config specied
-   ******************************************************************/
-  if (rotation == 1 || rotation == 3) {
-    PXP_output_clip(out_height - 1, out_width - 1);
-  } else {
-    PXP_output_clip(out_width - 1, out_height - 1);
-  }
-
-  // Rotation
-  /* Setting this bit to 1'b0 will place the rotationre sources at  *
-   * the output stage of the PXP data path. Image compositing will  *
-   * occur before pixels are processed for rotation.                *
-   * Setting this bit to a 1'b1 will place the rotation resources   *
-   * before image composition.                                      *
-   */
-  PXP_rotate_position(0);
-  
-  // Performs the actual rotation specified
-  PXP_rotate(rotation);
- 
-  // flip - pretty straight forward
-  PXP_flip(flip);
-
-  /************************************************************
-   * if performing scaling we call out to the scaling function
-   * which will perform remaining scaling and send to display.
-   ************************************************************/
-  if(scaling > 0.0f){
-    PXP_scaling(scaling, out_width, out_height, rotation);
-  } else {
-    PXP_process();
-    draw_frame(out_width, out_height, d_fb);
-  }
+  display_time = millis();
+  draw_frame(outputWidth, outputHeight, d_fb);
+  Serial.printf("Display time: %d\n", millis()-display_time);
 
 }
-
-
-void PXP_scaling(float downScaleFact, uint16_t width, uint16_t height, uint8_t rotation) {
-  uint16_t IMG_WIDTH  = width;
-  uint16_t IMG_HEIGHT = height;
-  outputWidth = (uint16_t)((float)(IMG_WIDTH) / downScaleFact);
-  outputHeight = (uint16_t)((float)(IMG_HEIGHT) / downScaleFact);
-
-  //capture_frame(false);
-  PXP_input_background_color(0, 153, 0);
-
-  PXP_output_buffer(d_fb, bytesperpixel, outputWidth, outputHeight);
-  if(rotation == 1 || rotation == 3) {
-    PXP_output_clip( outputHeight - 1, outputWidth - 1);
-  } else {
-    PXP_output_clip( outputWidth - 1, outputHeight - 1);
-  }
-  PXP_setScaling( IMG_WIDTH, IMG_HEIGHT, outputWidth, outputHeight);
-
-  PXP_process();
-  tft.fillScreen(TFT_GREEN);
-  draw_frame(outputWidth, outputHeight, d_fb );
-
-}
-
-void PXP_flip(bool flip) {
-  /* there are 3 flip commands that you can use           *
-   * PXP_flip_vertically                                  *
-   * PXP_flip_horizontally                                *
-   * PXP_flip_both                                        *
-   */
-  PXP_flip_both(flip);
-} 
 
 void start_pxp() {
   PXP_init();
@@ -318,6 +185,7 @@ void start_pxp() {
 }
 
 void draw_frame(uint16_t width, uint16_t height, const uint16_t *buffer) {
+  tft.fillScreen(TFT_BLACK);
   tft.writeRect(CENTER, CENTER, width, height, buffer );
 }
 

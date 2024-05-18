@@ -94,6 +94,17 @@ void PXP_setScaling(uint16_t inputWidth, uint16_t inputHeight, uint16_t outputWi
 void PXP_SetCsc1Mode(uint8_t mode);
 void PXP_set_csc_y8_to_rgb();
 
+void PXP_flip(bool flip);
+void PXP_scaling(void *buf_out, uint8_t bbp_out, float downScaleFact,
+                  uint16_t width, uint16_t height, uint8_t rotation,
+                  uint16_t* outputWidth, uint16_t* outputHeight);
+void PXP_ps_output(uint16_t disp_width, uint16_t disp_height, uint16_t image_width, uint16_t image_height, 
+                   void* buf_in, uint8_t format_in, uint8_t bpp_in, uint8_t byte_swap_in, 
+                   void* buf_out, uint8_t format_out, uint8_t bpp_out, uint8_t byte_swap_out, 
+                   uint8_t rotation, bool flip, float scaling, 
+                   uint16_t* scr_width, uint16_t* scr_height);
+
+
 //Call process to run the PXP with the current settings
 void PXP_process();
 
