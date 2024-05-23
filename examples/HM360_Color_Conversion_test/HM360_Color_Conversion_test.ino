@@ -1,9 +1,10 @@
-#include "Camera.h"
+#include "Teensy_Camera.h"
 #include "T4_PXP.h"
 
 /************************************************/
 #define USE_MMOD_ATP_ADAPTER
 #define use9488
+#define CAMERA_FRAME_SIZE FRAMESIZE_VGA
 
 #ifdef ARDUINO_TEENSY_DEVBRD4
 #undef USE_MMOD_ATP_ADAPTER
@@ -53,20 +54,29 @@ ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST);
 #endif
 /************************************************/
 
-#include "TMM_HM0360/HM0360.h"
+#include "Teensy_HM0360/HM0360.h"
 HM0360 himax;
 Camera camera(himax);
 #define CameraID 0x0360
 #define SCREEN_ROTATION 0
 #define MIRROR_FLIP_CAMERA
 
-framesize_t camera_framesize = FRAMESIZE_QVGA;
+
+framesize_t camera_framesize = CAMERA_FRAME_SIZE;
 bool useGPIO = false;
 
 /************************************************/
 
 #if !defined(ARDUINO_TEENSY_DEVBRD4)
-uint8_t s_fb[(480) * 320] __attribute__((aligned(64)));
+
+#if CAMERA_FRAME_SIZE == FRAMESIZE_VGA
+#define SCALING 1.5f
+uint8_t s_fb[(640) * 480] __attribute__((aligned(64)));
+#else
+#define SCALING  0f
+uint8_t s_fb[(320) * 240] __attribute__((aligned(64)));
+#endif
+
 DMAMEM uint16_t d_fb[(480) * 320] __attribute__ ((aligned (64)));
 const uint32_t sizeof_s_fb = sizeof(s_fb);
 const uint32_t sizeof_d_fb = sizeof(d_fb);
@@ -134,19 +144,19 @@ void loop() {
     switch (command) {
       case '0':
         Serial.println(" PXP rotation 0....");
-        run_pxp(0, false, 0.0f);
+        run_pxp(0, false, SCALING);
         break;
       case '1':
         Serial.println(" PXP rotation 1....");
-        run_pxp(1, false, 0.0f);
+        run_pxp(1, false, SCALING);
         break;
       case '2':
         Serial.println(" PXP rotation 2....");
-        run_pxp(2, false, 0.0f);
+        run_pxp(2, false, SCALING);
         break;
       case '3':
         Serial.println(" PXP rotation 3....");
-        run_pxp(3, false, 0.0f);
+        run_pxp(3, false, SCALING);
         break;
       case 'd':
         camera.debug(!camera.debug());
