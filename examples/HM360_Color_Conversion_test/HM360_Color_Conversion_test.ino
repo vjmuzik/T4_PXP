@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "Teensy_Camera.h"
 #include "T4_PXP.h"
 
 /************************************************/
@@ -53,7 +53,7 @@ ILI9341_t3n tft = ILI9341_t3n(TFT_CS, TFT_DC, TFT_RST);
 #endif
 /************************************************/
 
-#include "TMM_HM0360/HM0360.h"
+#include "Teensy_HM0360/HM0360.h"
 HM0360 himax;
 Camera camera(himax);
 #define CameraID 0x0360
